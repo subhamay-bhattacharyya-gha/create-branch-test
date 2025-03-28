@@ -6,6 +6,10 @@ inputs:
     description: The base branch to create the new feature branch from.
     required: false
     default: main
+  secrets:
+    git-token:
+      required: true
+      description: 'Specifies the GitHub Token for the repository.'
 
 runs:
   using: composite
@@ -17,7 +21,7 @@ runs:
 
     - name: Create Branch from Base
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.git-token }}
         BASE_BRANCH: ${{ inputs.base-branch }}
       run: |
         set -e
@@ -45,7 +49,7 @@ runs:
           | jq -r .object.sha)
 
         # Create the new branch
-        curl -s -X POST -H "Authorization: token $GH_TOKEN" \
+        curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
           -H "Content-Type: application/json" \
           -d "{\"ref\":\"refs/heads/$BRANCH_NAME\",\"sha\":\"$SHA\"}" \
           https://api.github.com/repos/$REPO/git/refs
@@ -53,7 +57,7 @@ runs:
 
     - name: Comment branch name on issue
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.git-token }}
       run: |
         set -e
         ISSUE_NUMBER="${{ github.event.issue.number }}"
