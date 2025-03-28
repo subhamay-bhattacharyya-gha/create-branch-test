@@ -17,7 +17,7 @@ runs:
 
     - name: Create Branch from Base
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
         BASE_BRANCH: ${{ inputs.base-branch }}
       run: |
         set -e
@@ -53,7 +53,7 @@ runs:
 
     - name: Comment branch name on issue
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
       run: |
         set -e
         ISSUE_NUMBER="${{ github.event.issue.number }}"
