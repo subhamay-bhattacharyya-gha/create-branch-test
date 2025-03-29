@@ -1,74 +1,108 @@
-name: Auto Create Feature Branch on Issue Assignment
-description: Automatically creates a feature branch when an issue is assigned.
+name: GitHub API Caller
 
-inputs:
-  base-branch:
-    description: The base branch to create the new feature branch from.
-    required: false
-    default: main
-  secrets:
-    git-token:
-      required: true
-      description: 'Specifies the GitHub Token for the repository.'
+on:
+  workflow_call:
+    # inputs:
+    #   api-endpoint:
+    #     required: true
+    #     type: string
+    #   http-method:
+    #     required: false
+    #     default: GET
+    #     type: string
 
-runs:
-  using: composite
-  steps:
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.x
+    secrets:
+      GITHUB_TOKEN:
+        required: true
 
-    - name: Create Branch from Base
-      env:
-        GITHUB_TOKEN: ${{ secrets.git-token }}
-        BASE_BRANCH: ${{ inputs.base-branch }}
-      run: |
-        set -e
-        ISSUE_NUMBER="${{ github.event.issue.number }}"
-        ISSUE_TITLE="${{ github.event.issue.title }}"
-        REPO="${{ github.repository }}"
-        echo "Github repo - $REPO"
+jobs:
+  call-github-api:
+    runs-on: ubuntu-latest
 
-        PROJECT_NO=$(echo $REPO | cut -d'/' -f2 | cut -d'-' -f1)
-        echo "Project # - $PROJECT_NO"
-        OWNER=$(echo $REPO | cut -d'/' -f1)
+    steps:
+      - name: Call GitHub API
+        run: |
+          echo "Calling GitHub API: ${{ inputs.api-endpoint }}"
+          RESPONSE=$(curl -sSL -X ${{ inputs.http-method }} \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com${{ inputs.api-endpoint }}")
+          
+          echo "API response:"
+          echo "$RESPONSE" | jq
 
-        SLUG=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-' | tr ' ' '-')
-        SLUG=${SLUG:0:15}
-        [[ "$SLUG" == -* ]] && SLUG="${SLUG:1}"
 
-        BRANCH_NAME="feature/${PROJECT_NO}.${ISSUE_NUMBER}-${SLUG}"
-        echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+# name: Auto Create Feature Branch on Issue Assignment
+# description: Automatically creates a feature branch when an issue is assigned.
 
-        echo "Creating branch: $BRANCH_NAME from $BASE_BRANCH"
+# inputs:
+#   base-branch:
+#     description: The base branch to create the new feature branch from.
+#     required: false
+#     default: main
+#   secrets:
+#     git-token:
+#       required: true
+#       description: 'Specifies the GitHub Token for the repository.'
 
-        # Get latest SHA of base branch
-        SHA=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-          https://api.github.com/repos/$REPO/git/ref/heads/$BASE_BRANCH \
-          | jq -r .object.sha)
+# runs:
+#   using: composite
+#   steps:
+#     - name: Set up Python
+#       uses: actions/setup-python@v4
+#       with:
+#         python-version: 3.x
 
-        # Create the new branch
-        curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
-          -H "Content-Type: application/json" \
-          -d "{\"ref\":\"refs/heads/$BRANCH_NAME\",\"sha\":\"$SHA\"}" \
-          https://api.github.com/repos/$REPO/git/refs
-      shell: bash
+#     - name: Create Branch from Base
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.git-token }}
+#         BASE_BRANCH: ${{ inputs.base-branch }}
+#       run: |
+#         set -e
+#         ISSUE_NUMBER="${{ github.event.issue.number }}"
+#         ISSUE_TITLE="${{ github.event.issue.title }}"
+#         REPO="${{ github.repository }}"
+#         echo "Github repo - $REPO"
 
-    - name: Comment branch name on issue
-      env:
-        GITHUB_TOKEN: ${{ secrets.git-token }}
-      run: |
-        set -e
-        ISSUE_NUMBER="${{ github.event.issue.number }}"
-        REPO="${{ github.repository }}"
-        BRANCH_NAME="${{ env.BRANCH_NAME }}"
+#         PROJECT_NO=$(echo $REPO | cut -d'/' -f2 | cut -d'-' -f1)
+#         echo "Project # - $PROJECT_NO"
+#         OWNER=$(echo $REPO | cut -d'/' -f1)
 
-        COMMENT_BODY="🔧 A new branch has been created for this issue: \`$BRANCH_NAME\`"
+#         SLUG=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-' | tr ' ' '-')
+#         SLUG=${SLUG:0:15}
+#         [[ "$SLUG" == -* ]] && SLUG="${SLUG:1}"
 
-        curl -s -X POST \
-          -H "Authorization: token $GITHUB_TOKEN" \
-          -H "Content-Type: application/json" \
-          -d "{\"body\": \"$COMMENT_BODY\"}" \
-          https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER/comments
-      shell: bash
+#         BRANCH_NAME="feature/${PROJECT_NO}.${ISSUE_NUMBER}-${SLUG}"
+#         echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+#         echo "Creating branch: $BRANCH_NAME from $BASE_BRANCH"
+
+#         # Get latest SHA of base branch
+#         SHA=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+#           https://api.github.com/repos/$REPO/git/ref/heads/$BASE_BRANCH \
+#           | jq -r .object.sha)
+
+#         # Create the new branch
+#         curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
+#           -H "Content-Type: application/json" \
+#           -d "{\"ref\":\"refs/heads/$BRANCH_NAME\",\"sha\":\"$SHA\"}" \
+#           https://api.github.com/repos/$REPO/git/refs
+#       shell: bash
+
+#     - name: Comment branch name on issue
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.git-token }}
+#       run: |
+#         set -e
+#         ISSUE_NUMBER="${{ github.event.issue.number }}"
+#         REPO="${{ github.repository }}"
+#         BRANCH_NAME="${{ env.BRANCH_NAME }}"
+
+#         COMMENT_BODY="🔧 A new branch has been created for this issue: \`$BRANCH_NAME\`"
+
+#         curl -s -X POST \
+#           -H "Authorization: token $GITHUB_TOKEN" \
+#           -H "Content-Type: application/json" \
+#           -d "{\"body\": \"$COMMENT_BODY\"}" \
+#           https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER/comments
+#       shell: bash
