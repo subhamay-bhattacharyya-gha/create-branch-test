@@ -16,9 +16,9 @@ on:
         required: true
 
 jobs:
-  # call-github-api:
-  #   runs-on: ubuntu-latest
-  using: composite
+  call-github-api:
+    runs-on: ubuntu-latest
+
     steps:
       - name: Call GitHub API
         run: |
