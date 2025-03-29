@@ -1,36 +1,33 @@
-name: GitHub API Caller
+name: 'GitHub API Caller'
+description: 'Calls a GitHub API endpoint using curl'
 
-on:
-  workflow_call:
-    # inputs:
-    #   api-endpoint:
-    #     required: true
-    #     type: string
-    #   http-method:
-    #     required: false
-    #     default: GET
-    #     type: string
+inputs:
+  api-endpoint:
+    description: 'The GitHub API endpoint to call'
+    required: true
+  http-method:
+    description: 'HTTP method to use'
+    required: false
+    default: 'GET'
+  github-token:
+    description: 'GitHub token'
+    required: true
 
-    secrets:
-      GITHUB_TOKEN:
-        required: true
-
-# jobs:
-#   call-github-api:
-#     runs-on: ubuntu-latest
 runs:
-  using: composite
+  using: 'composite'
   steps:
     - name: Call GitHub API
+      shell: bash
       run: |
         echo "Calling GitHub API: ${{ inputs.api-endpoint }}"
         RESPONSE=$(curl -sSL -X ${{ inputs.http-method }} \
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Authorization: token ${{ inputs.github-token }}" \
           -H "Accept: application/vnd.github.v3+json" \
           "https://api.github.com${{ inputs.api-endpoint }}")
         
         echo "API response:"
         echo "$RESPONSE" | jq
+
 
 
 # name: Auto Create Feature Branch on Issue Assignment
